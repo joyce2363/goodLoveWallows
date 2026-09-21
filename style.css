@@ -1,0 +1,217 @@
+:root {
+  color-scheme: dark;
+  --ink: #edf4f3;
+  --muted: #8c9c9b;
+  --line: rgba(237, 244, 243, 0.14);
+  --cyan: #65f6e2;
+  --deep: #081313;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+  background: var(--deep);
+  color: var(--ink);
+  font-family: "Avenir Next", "Helvetica Neue", sans-serif;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-height: 100vh;
+  padding: 28px 34px 24px;
+  background:
+    radial-gradient(circle at 50% 40%, rgba(22, 64, 63, 0.26), transparent 42%),
+    linear-gradient(145deg, #081313 0%, #0d1d1d 54%, #071010 100%);
+}
+
+.topbar,
+.instructions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.topbar {
+  padding-bottom: 20px;
+}
+
+.eyebrow,
+.coordinates,
+.instructions,
+.status {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  margin: 0 0 5px;
+  color: var(--cyan);
+  font-weight: 700;
+}
+
+h1 {
+  margin: 0;
+  font-family: Georgia, serif;
+  font-size: clamp(28px, 4vw, 48px);
+  font-weight: 400;
+  line-height: 0.9;
+  letter-spacing: 0;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--muted);
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--muted);
+  border-radius: 50%;
+}
+
+.is-on .status-dot {
+  border-color: var(--cyan);
+  background: var(--cyan);
+  box-shadow: 0 0 12px var(--cyan);
+}
+
+.is-on .status {
+  color: var(--cyan);
+}
+
+.stage {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  outline: none;
+  background: rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.3);
+}
+
+.stage:focus-visible {
+  border-color: rgba(101, 246, 226, 0.55);
+}
+
+.map-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.glow-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0;
+  clip-path: inset(var(--clip-top) var(--clip-right) var(--clip-bottom) var(--clip-left));
+  filter: brightness(var(--beat-brightness, 1.48)) saturate(var(--beat-saturation, 1.4)) contrast(1.08);
+  mix-blend-mode: screen;
+  transition: opacity 220ms ease;
+  pointer-events: none;
+}
+
+.glow-aura {
+  position: absolute;
+  opacity: 0;
+  border-radius: 8px;
+  background: rgba(101, 246, 226, 0.08);
+  box-shadow:
+    0 0 12px rgba(101, 246, 226, 0.52),
+    0 0 28px rgba(101, 246, 226, 0.3);
+  filter: blur(7px);
+  transform: scale(var(--beat-scale, 1));
+  box-shadow:
+    0 0 12px rgba(101, 246, 226, var(--beat-shadow, 0.52)),
+    0 0 28px rgba(101, 246, 226, var(--beat-shadow-wide, 0.3));
+  transition: opacity 220ms ease;
+  pointer-events: none;
+}
+
+.is-on-1 .glow-image-one,
+.is-on-1 .glow-aura-one,
+.is-on-2 .glow-image-two,
+.is-on-2 .glow-aura-two,
+.is-on-3 .glow-image-three,
+.is-on-3 .glow-aura-three,
+.is-on-4 .glow-image-four,
+.is-on-4 .glow-aura-four,
+.is-on-5 .glow-image-five,
+.is-on-5 .glow-aura-five,
+.is-on-6 .glow-image-six,
+.is-on-6 .glow-aura-six,
+.is-on-7 .glow-image-seven,
+.is-on-7 .glow-aura-seven,
+.is-on-8 .glow-image-eight,
+.is-on-8 .glow-aura-eight,
+.is-on-9 .glow-image-nine,
+.is-on-9 .glow-aura-nine,
+.is-on-10 .glow-image-ten,
+.is-on-10 .glow-aura-ten,
+.is-on-11 .glow-image-eleven,
+.is-on-11 .glow-aura-eleven,
+.is-on-12 .glow-image-twelve,
+.is-on-12 .glow-aura-twelve,
+.is-on-13 .glow-image-thirteen,
+.is-on-13 .glow-aura-thirteen {
+  opacity: 1;
+}
+
+.coordinates {
+  position: absolute;
+  right: 16px;
+  bottom: 14px;
+  color: rgba(237, 244, 243, 0.65);
+  font-size: 9px;
+  pointer-events: none;
+}
+
+.instructions {
+  justify-content: flex-start;
+  gap: 12px;
+  padding-top: 18px;
+  color: var(--muted);
+}
+
+.keycap {
+  padding: 6px 8px 5px;
+  border: 1px solid rgba(237, 244, 243, 0.3);
+  color: var(--ink);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+}
+
+@media (max-width: 600px) {
+  .app-shell {
+    padding: 20px 16px 18px;
+  }
+
+  .topbar {
+    padding-bottom: 14px;
+  }
+
+  .coordinates {
+    right: 10px;
+    bottom: 10px;
+    font-size: 8px;
+  }
+}
