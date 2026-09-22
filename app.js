@@ -19,6 +19,10 @@ let beatBaseline = 0;
 const bufferTracks = {
   one: { url: "1.mp3", buffer: null, source: null, offset: 0, startedAt: 0, playing: false },
   two: { url: "2.mp3", buffer: null, source: null, offset: 0, startedAt: 0, playing: false },
+  three: { url: "3.mp3", buffer: null, source: null, offset: 0, startedAt: 0, playing: false },
+  four: { url: "4.mp3", buffer: null, source: null, offset: 0, startedAt: 0, playing: false },
+  five: { url: "5.mp3", buffer: null, source: null, offset: 0, startedAt: 0, playing: false },
+  six: { url: "6.mp3", buffer: null, source: null, offset: 0, startedAt: 0, playing: false },
 };
 
 function getAudioContext() {
@@ -266,6 +270,22 @@ function toggleTwoAudio() {
   toggleBufferTrack("two", "E");
 }
 
+function toggleThreeAudio() {
+  toggleBufferTrack("three", "R");
+}
+
+function toggleFourAudio() {
+  toggleBufferTrack("four", "S");
+}
+
+function toggleFiveAudio() {
+  toggleBufferTrack("five", "D");
+}
+
+function toggleSixAudio() {
+  toggleBufferTrack("six", "F");
+}
+
 function startBeatVisualizer() {
   if (!beatFrame) {
     beatFrame = requestAnimationFrame(updateBeatGlow);
@@ -316,6 +336,7 @@ stage.addEventListener("keydown", (event) => {
     toggleDrums();
   } else if (event.key.toLowerCase() === "s") {
     toggleGlow(5);
+    toggleFourAudio();
   } else if (event.key.toLowerCase() === "v") {
     toggleGlow(6);
   } else if (event.key.toLowerCase() === "e") {
@@ -323,15 +344,18 @@ stage.addEventListener("keydown", (event) => {
     toggleTwoAudio();
   } else if (event.key.toLowerCase() === "r") {
     toggleGlow(3);
+    toggleThreeAudio();
   } else if (event.key.toLowerCase() === "y") {
     toggleGlow(4);
     toggleBass();
   } else if (event.key.toLowerCase() === "f") {
     toggleGlow(7);
+    toggleSixAudio();
   } else if (event.key.toLowerCase() === "x") {
     toggleGlow(8);
   } else if (event.key.toLowerCase() === "d") {
     toggleGlow(9);
+    toggleFiveAudio();
   } else if (event.key.toLowerCase() === "c") {
     toggleGlow(11);
   } else if (event.key.toLowerCase() === "j") {
@@ -341,7 +365,10 @@ stage.addEventListener("keydown", (event) => {
   }
 });
 
-stage.addEventListener("click", () => stage.focus());
+stage.addEventListener("click", () => {
+  stage.focus();
+  getAudioContext().resume();
+});
 window.addEventListener("resize", positionGlowBox);
 image.addEventListener("load", positionGlowBox);
 
@@ -349,3 +376,7 @@ stage.focus();
 positionGlowBox();
 loadBufferTrack("one");
 loadBufferTrack("two");
+loadBufferTrack("three");
+loadBufferTrack("four");
+loadBufferTrack("five");
+loadBufferTrack("six");
