@@ -5,6 +5,7 @@ const glowAuras = document.querySelectorAll(".glow-aura");
 const statusLabel = document.querySelector("#status-label");
 const drumsAudio = document.querySelector("#drums-audio");
 const bassAudio = document.querySelector("#bass-audio");
+const oneAudio = document.querySelector("#one-audio");
 let audioContext;
 let analyser;
 let frequencyData;
@@ -128,10 +129,10 @@ function positionGlowBox() {
     glowImage.style.setProperty("--clip-top", `${top}px`);
     glowImage.style.setProperty("--clip-right", `${stageBounds.width - left - width}px`);
     glowImage.style.setProperty("--clip-bottom", `${stageBounds.height - top - height}px`);
-    glowAura.style.left = `${left - 7}px`;
-    glowAura.style.top = `${top - 7}px`;
-    glowAura.style.width = `${width + 14}px`;
-    glowAura.style.height = `${height + 14}px`;
+    glowAura.style.left = `${left}px`;
+    glowAura.style.top = `${top}px`;
+    glowAura.style.width = `${width}px`;
+    glowAura.style.height = `${height}px`;
 
     if (box.points) {
       const imagePolygon = box.points
@@ -194,6 +195,16 @@ function toggleBass() {
   }
 }
 
+function toggleOneAudio() {
+  if (oneAudio.paused) {
+    oneAudio.play().catch(() => {
+      statusLabel.textContent = "Press W to allow audio";
+    });
+  } else {
+    oneAudio.pause();
+  }
+}
+
 function startBeatVisualizer() {
   if (!beatFrame) {
     beatFrame = requestAnimationFrame(updateBeatGlow);
@@ -238,13 +249,14 @@ stage.addEventListener("keydown", (event) => {
 
   if (event.key.toLowerCase() === "w") {
     toggleGlow(0);
+    toggleOneAudio();
   } else if (event.key.toLowerCase() === "p") {
     toggleGlow(1);
+    toggleDrums();
   } else if (event.key.toLowerCase() === "s") {
     toggleGlow(5);
   } else if (event.key.toLowerCase() === "v") {
     toggleGlow(6);
-    toggleDrums();
   } else if (event.key.toLowerCase() === "e") {
     toggleGlow(2);
   } else if (event.key.toLowerCase() === "r") {
