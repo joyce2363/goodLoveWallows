@@ -5,13 +5,76 @@ const glowAuras = document.querySelectorAll(".glow-aura");
 const statusLabel = document.querySelector("#status-label");
 const drumsAudio = document.querySelector("#drums-audio");
 const bassAudio = document.querySelector("#bass-audio");
-const oneAudio = document.querySelector("#one-audio");
 let audioContext;
 let analyser;
 let frequencyData;
 let audioSource;
 let beatFrame;
 let beatBaseline = 0;
+
+// One/two audio are toggled directly off keypresses, so they're decoded into
+// in-memory buffers ahead of time and played via AudioBufferSourceNode.
+// HTMLAudioElement.play() has to spin up the media pipeline on every call,
+// which is slow enough on a 3-minute mp3 to feel like input lag.
+const bufferTracks = {
+  one: { url: "1.mp3", buffer: null, source: null, offset: 0, startedAt: 0, playing: false },
+  two: { url: "2.mp3", buffer: null, source: null, offset: 0, startedAt: 0, playing: false },
+};
+
+function getAudioContext() {
+  if (!audioContext) {
+    audioContext = new AudioContext();
+  }
+  return audioContext;
+}
+
+function loadBufferTrack(key) {
+  const track = bufferTracks[key];
+  fetch(track.url)
+    .then((response) => response.arrayBuffer())
+    .then((arrayBuffer) => getAudioContext().decodeAudioData(arrayBuffer))
+    .then((buffer) => {
+      track.buffer = buffer;
+    })
+    .catch(() => {
+      statusLabel.textContent = `Failed to load ${track.url}`;
+    });
+}
+
+function toggleBufferTrack(key, allowKey) {
+  const track = bufferTracks[key];
+  if (!track.buffer) {
+    statusLabel.textContent = `Loading audio, press ${allowKey} again in a moment`;
+    return;
+  }
+
+  const ctx = getAudioContext();
+  ctx.resume();
+
+  if (track.playing) {
+    track.offset = (track.offset + (ctx.currentTime - track.startedAt)) % track.buffer.duration;
+    track.source.onended = null;
+    track.source.stop();
+    track.source = null;
+    track.playing = false;
+    return;
+  }
+
+  const source = ctx.createBufferSource();
+  source.buffer = track.buffer;
+  source.connect(ctx.destination);
+  source.start(0, track.offset);
+  source.onended = () => {
+    if (track.source === source) {
+      track.source = null;
+      track.offset = 0;
+      track.playing = false;
+    }
+  };
+  track.source = source;
+  track.startedAt = ctx.currentTime;
+  track.playing = true;
+}
 
 const imageSize = { width: 1487, height: 934 };
 const boxes = [
@@ -162,19 +225,19 @@ function toggleGlow(boxIndex) {
 }
 
 function toggleDrums() {
-  if (!audioContext) {
-    audioContext = new AudioContext();
-    analyser = audioContext.createAnalyser();
+  const ctx = getAudioContext();
+  if (!analyser) {
+    analyser = ctx.createAnalyser();
     analyser.fftSize = 256;
     analyser.smoothingTimeConstant = 0.72;
     frequencyData = new Uint8Array(analyser.frequencyBinCount);
-    audioSource = audioContext.createMediaElementSource(drumsAudio);
+    audioSource = ctx.createMediaElementSource(drumsAudio);
     audioSource.connect(analyser);
-    analyser.connect(audioContext.destination);
+    analyser.connect(ctx.destination);
   }
 
   if (drumsAudio.paused) {
-    audioContext.resume();
+    ctx.resume();
     drumsAudio.play().catch(() => {
       statusLabel.textContent = "Press P to allow drums";
     });
@@ -196,13 +259,11 @@ function toggleBass() {
 }
 
 function toggleOneAudio() {
-  if (oneAudio.paused) {
-    oneAudio.play().catch(() => {
-      statusLabel.textContent = "Press W to allow audio";
-    });
-  } else {
-    oneAudio.pause();
-  }
+  toggleBufferTrack("one", "W");
+}
+
+function toggleTwoAudio() {
+  toggleBufferTrack("two", "E");
 }
 
 function startBeatVisualizer() {
@@ -259,6 +320,7 @@ stage.addEventListener("keydown", (event) => {
     toggleGlow(6);
   } else if (event.key.toLowerCase() === "e") {
     toggleGlow(2);
+    toggleTwoAudio();
   } else if (event.key.toLowerCase() === "r") {
     toggleGlow(3);
   } else if (event.key.toLowerCase() === "y") {
@@ -285,3 +347,5 @@ image.addEventListener("load", positionGlowBox);
 
 stage.focus();
 positionGlowBox();
+loadBufferTrack("one");
+loadBufferTrack("two");
