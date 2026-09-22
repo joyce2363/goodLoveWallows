@@ -5,24 +5,33 @@ const glowAuras = document.querySelectorAll(".glow-aura");
 const statusLabel = document.querySelector("#status-label");
 const drumsAudio = document.querySelector("#drums-audio");
 const bassAudio = document.querySelector("#bass-audio");
+const vocalsAudio = document.querySelector("#vocals-audio");
 let audioContext;
 let analyser;
 let frequencyData;
 let audioSource;
 let beatFrame;
 let beatBaseline = 0;
+let bassAnalyser;
+let bassFrequencyData;
+let bassAudioSource;
+let bassBeatFrame;
+let bassBeatBaseline = 0;
 
 // One/two audio are toggled directly off keypresses, so they're decoded into
 // in-memory buffers ahead of time and played via AudioBufferSourceNode.
 // HTMLAudioElement.play() has to spin up the media pipeline on every call,
 // which is slow enough on a 3-minute mp3 to feel like input lag.
 const bufferTracks = {
-  one: { url: "1.mp3", buffer: null, source: null, offset: 0, startedAt: 0, playing: false },
-  two: { url: "2.mp3", buffer: null, source: null, offset: 0, startedAt: 0, playing: false },
-  three: { url: "3.mp3", buffer: null, source: null, offset: 0, startedAt: 0, playing: false },
-  four: { url: "4.mp3", buffer: null, source: null, offset: 0, startedAt: 0, playing: false },
-  five: { url: "5.mp3", buffer: null, source: null, offset: 0, startedAt: 0, playing: false },
-  six: { url: "6.mp3", buffer: null, source: null, offset: 0, startedAt: 0, playing: false },
+  one:   { url: "1.mp3", boxIndex: 0, buffer: null, source: null, offset: 0, startedAt: 0, playing: false },
+  two:   { url: "2.mp3", boxIndex: 2, buffer: null, source: null, offset: 0, startedAt: 0, playing: false },
+  three: { url: "3.mp3", boxIndex: 3, buffer: null, source: null, offset: 0, startedAt: 0, playing: false },
+  four:  { url: "4.mp3", boxIndex: 5, buffer: null, source: null, offset: 0, startedAt: 0, playing: false },
+  five:  { url: "5.mp3", boxIndex: 9, buffer: null, source: null, offset: 0, startedAt: 0, playing: false },
+  six:   { url: "6.mp3", boxIndex: 7, buffer: null, source: null, offset: 0, startedAt: 0, playing: false },
+  seven: { url: "7.mp3", boxIndex: 8, buffer: null, source: null, offset: 0, startedAt: 0, playing: false },
+  eight: { url: "8.mp3", boxIndex: 11, buffer: null, source: null, offset: 0, startedAt: 0, playing: false },
+  nine:  { url: "9.mp3", boxIndex: 6,  buffer: null, source: null, offset: 0, startedAt: 0, playing: false },
 };
 
 function getAudioContext() {
@@ -55,29 +64,37 @@ function toggleBufferTrack(key, allowKey) {
   const ctx = getAudioContext();
   ctx.resume();
 
-  if (track.playing) {
-    track.offset = (track.offset + (ctx.currentTime - track.startedAt)) % track.buffer.duration;
+  if (track.source) {
     track.source.onended = null;
-    track.source.stop();
+    try {
+      track.source.stop();
+    } catch (e) {}
     track.source = null;
-    track.playing = false;
-    return;
   }
 
+  track.offset = 0;
   const source = ctx.createBufferSource();
   source.buffer = track.buffer;
   source.connect(ctx.destination);
-  source.start(0, track.offset);
+  source.start(0, 0);
+
   source.onended = () => {
     if (track.source === source) {
       track.source = null;
       track.offset = 0;
       track.playing = false;
+      if (track.boxIndex !== undefined) {
+        turnOffGlow(track.boxIndex);
+      }
     }
   };
+
   track.source = source;
   track.startedAt = ctx.currentTime;
   track.playing = true;
+  if (track.boxIndex !== undefined) {
+    setGlow(track.boxIndex, true);
+  }
 }
 
 const imageSize = { width: 1487, height: 934 };
@@ -143,22 +160,22 @@ const boxes = [
     maxY: 722,
   },
   { // J diamond
-    minX: 557,
+    minX: 560,
     minY: 349,
     maxX: 641,
-    maxY: 606,
+    maxY: 609,
     points: [
-      { x: 564, y: 371 },
+      { x: 567, y: 371 },
       { x: 641, y: 349 },
-      { x: 641, y: 606 },
-      { x: 557, y: 604 },
+      { x: 641, y: 609 },
+      { x: 560, y: 607 },
     ],
   },
   { // C
-    minX: 293,
+    minX: 287,
     minY: 744,
-    maxX: 364,
-    maxY: 804,
+    maxX: 366,
+    maxY: 796,
   },
   { // K
     minX: 566,
@@ -214,9 +231,13 @@ function positionGlowBox() {
   });
 }
 
-function toggleGlow(boxIndex) {
+function setGlow(boxIndex, forceState) {
   const stateClass = `is-on-${boxIndex + 1}`;
-  const isOn = document.body.classList.toggle(stateClass);
+  if (forceState !== undefined) {
+    document.body.classList.toggle(stateClass, forceState);
+  } else {
+    document.body.classList.toggle(stateClass);
+  }
   const activeBoxes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].filter((number) =>
     document.body.classList.contains(`is-on-${number}`),
   );
@@ -227,6 +248,28 @@ function toggleGlow(boxIndex) {
     statusLabel.textContent = "Glow off";
   }
 }
+
+function toggleGlow(boxIndex) {
+  setGlow(boxIndex);
+}
+
+function turnOffGlow(boxIndex) {
+  setGlow(boxIndex, false);
+}
+
+drumsAudio.addEventListener("ended", () => {
+  turnOffGlow(1);
+  stopBeatVisualizer();
+});
+
+bassAudio.addEventListener("ended", () => {
+  turnOffGlow(4);
+  stopBassBeatVisualizer();
+});
+
+vocalsAudio.addEventListener("ended", () => {
+  turnOffGlow(10);
+});
 
 function toggleDrums() {
   const ctx = getAudioContext();
@@ -253,12 +296,38 @@ function toggleDrums() {
 }
 
 function toggleBass() {
+  const ctx = getAudioContext();
+  if (!bassAnalyser) {
+    bassAnalyser = ctx.createAnalyser();
+    bassAnalyser.fftSize = 256;
+    bassAnalyser.smoothingTimeConstant = 0.72;
+    bassFrequencyData = new Uint8Array(bassAnalyser.frequencyBinCount);
+    bassAudioSource = ctx.createMediaElementSource(bassAudio);
+    bassAudioSource.connect(bassAnalyser);
+    bassAnalyser.connect(ctx.destination);
+  }
+
   if (bassAudio.paused) {
+    ctx.resume();
     bassAudio.play().catch(() => {
       statusLabel.textContent = "Press Y to allow bass";
     });
+    startBassBeatVisualizer();
   } else {
     bassAudio.pause();
+    stopBassBeatVisualizer();
+  }
+}
+
+function toggleVocals() {
+  const ctx = getAudioContext();
+  if (vocalsAudio.paused) {
+    ctx.resume();
+    vocalsAudio.play().catch(() => {
+      statusLabel.textContent = "Press J to allow vocals";
+    });
+  } else {
+    vocalsAudio.pause();
   }
 }
 
@@ -284,6 +353,18 @@ function toggleFiveAudio() {
 
 function toggleSixAudio() {
   toggleBufferTrack("six", "F");
+}
+
+function toggleSevenAudio() {
+  toggleBufferTrack("seven", "X");
+}
+
+function toggleEightAudio() {
+  toggleBufferTrack("eight", "C");
+}
+
+function toggleNineAudio() {
+  toggleBufferTrack("nine", "V");
 }
 
 function startBeatVisualizer() {
@@ -323,43 +404,79 @@ function updateBeatGlow() {
   beatFrame = drumsAudio.paused ? undefined : requestAnimationFrame(updateBeatGlow);
 }
 
+function startBassBeatVisualizer() {
+  if (!bassBeatFrame) {
+    bassBeatFrame = requestAnimationFrame(updateBassGlow);
+  }
+}
+
+function stopBassBeatVisualizer() {
+  if (bassBeatFrame) {
+    cancelAnimationFrame(bassBeatFrame);
+    bassBeatFrame = undefined;
+  }
+  setBassBeatStyles(0);
+}
+
+function setBassBeatStyles(beat) {
+  const brightness = 1.48 + beat * 1.5;
+  const saturation = 1.4 + beat * 1.0;
+  const shadow = 0.52 + beat * 0.5;
+  const wideShadow = 0.3 + beat * 0.4;
+
+  if (glowImages[4]) {
+    glowImages[4].style.filter = `brightness(${brightness.toFixed(3)}) saturate(${saturation.toFixed(3)}) contrast(1.08)`;
+  }
+  if (glowAuras[4]) {
+    glowAuras[4].style.transform = `scale(${(1 + beat * 0.14).toFixed(3)})`;
+    glowAuras[4].style.boxShadow = `0 0 14px rgba(101, 246, 226, ${shadow.toFixed(3)}), 0 0 32px rgba(101, 246, 226, ${wideShadow.toFixed(3)})`;
+  }
+}
+
+function updateBassGlow() {
+  bassAnalyser.getByteFrequencyData(bassFrequencyData);
+  const lowFrequencyBins = bassFrequencyData.slice(0, 10);
+  const energy = lowFrequencyBins.reduce((sum, value) => sum + value, 0) /
+    (lowFrequencyBins.length * 255);
+  bassBeatBaseline = bassBeatBaseline * 0.94 + energy * 0.06;
+  const beat = Math.min(1, Math.max(0, (energy - bassBeatBaseline) * 6.0));
+
+  setBassBeatStyles(beat);
+  bassBeatFrame = bassAudio.paused ? undefined : requestAnimationFrame(updateBassGlow);
+}
+
 stage.addEventListener("keydown", (event) => {
   if (event.repeat) {
     return;
   }
 
   if (event.key.toLowerCase() === "w") {
-    toggleGlow(0);
     toggleOneAudio();
   } else if (event.key.toLowerCase() === "p") {
     toggleGlow(1);
     toggleDrums();
   } else if (event.key.toLowerCase() === "s") {
-    toggleGlow(5);
     toggleFourAudio();
   } else if (event.key.toLowerCase() === "v") {
-    toggleGlow(6);
+    toggleNineAudio();
   } else if (event.key.toLowerCase() === "e") {
-    toggleGlow(2);
     toggleTwoAudio();
   } else if (event.key.toLowerCase() === "r") {
-    toggleGlow(3);
     toggleThreeAudio();
   } else if (event.key.toLowerCase() === "y") {
     toggleGlow(4);
     toggleBass();
   } else if (event.key.toLowerCase() === "f") {
-    toggleGlow(7);
     toggleSixAudio();
   } else if (event.key.toLowerCase() === "x") {
-    toggleGlow(8);
+    toggleSevenAudio();
   } else if (event.key.toLowerCase() === "d") {
-    toggleGlow(9);
     toggleFiveAudio();
   } else if (event.key.toLowerCase() === "c") {
-    toggleGlow(11);
+    toggleEightAudio();
   } else if (event.key.toLowerCase() === "j") {
     toggleGlow(10);
+    toggleVocals();
   } else if (event.key.toLowerCase() === "k") {
     toggleGlow(12);
   }
@@ -380,3 +497,6 @@ loadBufferTrack("three");
 loadBufferTrack("four");
 loadBufferTrack("five");
 loadBufferTrack("six");
+loadBufferTrack("seven");
+loadBufferTrack("eight");
+loadBufferTrack("nine");
